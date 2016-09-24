@@ -2,6 +2,14 @@ var express = require('express');
 var app = express();
 var mongoose = require('mongoose');
 var fs = require('fs');
+app.set('view options', { layout: false });
+
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
+
+var multer = require('multer');
+var upload = multer({ dest: 'images/' });
 
 var SERVERPATH = '/opt/pitchhike';
 
@@ -50,6 +58,17 @@ app.get('/login', function(req, res, next){
 // ユーザ一覧取得
 app.get('/getUsers', function(req, res, next){
   User.find({}, function(err, docs){
+    var list = [];
+    docs.forEach(function(m){
+      list.push(m);
+    });
+    res.send(list);
+  });
+});
+
+// ピッチ一覧取得
+app.get('/getPitchs', function(req, res, next){
+  Pitch.find({}, function(err, docs){
     var list = [];
     docs.forEach(function(m){
       list.push(m);
@@ -190,8 +209,26 @@ app.get('/getTopics', function(req, res, next){
 });
 
 // ユーザ登録
-app.get('/registUser', function(req, res, next){
+app.post('/registUser', upload.array('files'), function(req, res){
+  res.setHeader('Content-Type', 'text/plain');
+  console.log(req.body);
+  var name = "";
+  if (req.body.name) {
+    name = req.body.name;
+  }
+  var userid = "";
+  if (req.body.userid) {
+    userid = req.body.userid;
+  }
+  // 画像を保存
+  if (req.body.files){
+    req.files.forEach(function(elem) {
+      console.log(elem.filename);
+    });
+  }
+  res.send(name);
 });
+
 
 // ユーザ更新
 app.get('/updateUser', function(req, res, next){
