@@ -9,7 +9,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
 var multer = require('multer');
-var upload = multer({ dest: 'images/' });
+var upload = multer({ dest: 'image/' });
 
 var SERVERPATH = '/opt/pitchhike';
 
@@ -21,6 +21,7 @@ mongoose.model('user', new mongoose.Schema({
   name:		String,
   image:	String,
   language:     String,
+  native:	String,
   rate:         Number,
   location:	[Number],
   fullname:     String,
@@ -37,10 +38,12 @@ mongoose.model('pitch', new mongoose.Schema({
   status:       String,
   student:      String,
   teacher:      String,
+  language:	String,
   location:     [Number],
   place:        String,
   placeid:      String,
   arrive:       Number,
+  time:		Number,
   starttime:    Number
 }));
 Pitch = mongoose.model('pitch');
@@ -80,28 +83,50 @@ app.get('/getPitchs', function(req, res, next){
 // ユーザの位置情報を更新
 app.get('/updateUserLocation', function(req, res, next){
   User.findOne({ userid:req.param("userid") }, function(err, doc){
-    doc.location = [req.param("lng"),req.param("lat")];
-    doc.save(function(err){
-    });
-    res.send(doc);
+    if(doc){
+      doc.location = [req.param("lng"),req.param("lat")];
+      doc.save(function(err){
+      });
+      res.send(doc);
+    }else{
+      res.send(doc);
+    }
   });
 });
 
 // 最も近い教師をリクエスト
 app.get('/requestTeacher', function(req, res, next){
-  User.findOne({ location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang") }, function(err, doc){
-    var teacher = doc.toObject();
-    // pitchレコード（ステータス：リクエスト中）を作成
-    var pitchRecord = new Pitch();
-    pitchRecord.status   = "req";
-    pitchRecord.student  = req.param("userid");
-    pitchRecord.teacher  = teacher.userid;
-    pitchRecord.location = [req.param("lng"), req.param("lat")];
-    pitchRecord.place    = req.param("place");
-    pitchRecord.placeid  = req.param("placeid");
-    pitchRecord.save(function(err){
-      res.send(pitchRecord);
-    });
+  //User.findOne({ location : { $near : [req.param("lng"), req.param("lat")] }, native:req.param("lang") }, function(err, doc){
+    //if(!doc){
+      //res.send("null");
+    //} else {
+      //var teacher = doc.toObject();
+      // pitchレコード（ステータス：リクエスト中）を作成
+      var pitchRecord = new Pitch();
+      pitchRecord.status   = "req";
+      pitchRecord.student  = req.param("userid");
+      pitchRecord.teacher  = "";
+      pitchRecord.language = req.param("lang");
+      pitchRecord.location = [req.param("lng"), req.param("lat")];
+      pitchRecord.place    = req.param("place");
+      pitchRecord.placeid  = req.param("placeid");
+      pitchRecord.time     = req.param("time");
+      pitchRecord.save(function(err){
+        res.send(pitchRecord);
+      });
+    //}
+  //});
+});
+
+// 自分の近くで自分の母国語に対するリクエストが無いか確認
+app.get('/searchRequest', function(req, res, next){
+  //Pitch.find({ language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
+  Pitch.find({ location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
+    if(!doc){
+      res.send("null");
+    } else {
+      res.send(doc[0]);
+    }
   });
 });
 
@@ -123,11 +148,15 @@ app.get('/getRequestStatus', function(req, res, next){
 app.get('/responseTeacher', function(req, res, next){
   // pitchレコードのステータスをレスポンス有に設定
   Pitch.findOne({ _id:req.param("_id") }, function(err, doc){
-    doc.status = "res";
-    doc.teacher = req.param("userid");
-    doc.save(function(err){
-    });
-    res.send(doc);
+    if(!doc){
+      res.send("null");
+    }else{
+      doc.status = "res";
+      doc.teacher = req.param("userid");
+      doc.save(function(err){
+      });
+      res.send(doc);
+    }
   });
 });
 
@@ -194,10 +223,14 @@ app.get('/updatePitchStarttime', function(req, res, next){
 app.get('/finishPitching', function(req, res, next){
   // pitchレコードのステータスを「終了（finish）」に更新
   Pitch.findOne({ _id:req.param("_id") }, function(err, doc){
-    doc.status = "finish";
-    doc.save(function(err){
-    });
-    res.send(doc);
+    if(doc){
+      doc.status = "finish";
+      doc.save(function(err){
+      });
+      res.send(doc);
+    }else{
+      res.send(doc);
+    }
   });
 });
 
@@ -208,27 +241,79 @@ app.get('/getTopics', function(req, res, next){
   });
 });
 
+
 // ユーザ登録
-app.post('/registUser', upload.array('files'), function(req, res){
-  res.setHeader('Content-Type', 'text/plain');
-  console.log(req.body);
-  var name = "";
-  if (req.body.name) {
-    name = req.body.name;
+app.post('/registUser', function(req, res){
+  User.findOne({userid:req.body.userid}, function(err, doc){
+  console.log("test:" + doc);
+  if( doc ){
+    console.log("already registord");
+    res.send(doc);
+  } else {
+
+  //res.setHeader('Content-Type', 'text/plain');
+  //console.log(req.body);
+
+  // ユーザレコードを作成
+  var userRecord = new User();
+
+  var firstname = "";
+  if (req.body.firstname) {
+    firstname = req.body.firstname;
+  }
+  var lastname = "";
+  if (req.body.lastname) {
+    lastname = req.body.lastname;
   }
   var userid = "";
   if (req.body.userid) {
     userid = req.body.userid;
   }
-  // 画像を保存
-  if (req.body.files){
-    req.files.forEach(function(elem) {
-      console.log(elem.filename);
-    });
+  var language = "";
+  if (req.body.lang) {
+    language = req.body.lang;
   }
-  res.send(name);
+  var native = "";
+  if (req.body.native) {
+    native = req.body.native;
+  }
+  var image = "";
+  // 画像を保存
+  if (req.body.image){
+    //console.log(req.body.image + req.body.oe);
+    //image = b64encode(req.body.image);
+    image = req.body.image + "&oe=" +  req.body.oe;
+    //console.log(image);
+  }
+  userRecord.userid  = userid;
+  userRecord.password  = "";
+  userRecord.name   = firstname;
+  userRecord.image  = image;
+  userRecord.fullname  = firstname + " " + lastname;
+  userRecord.language  = language;
+  userRecord.native  = native;
+  userRecord.rate  = 4;
+  userRecord.location  = [];
+  userRecord.birthday  = "";
+  userRecord.gender  = "";
+  userRecord.hobbies  = "";
+  userRecord.job  = "";
+  userRecord.dream  = "";
+  userRecord.from  = "";
+  userRecord.save(function(err){
+    res.send(userRecord);
+  });
+  }
+  });
 });
 
+function b64encode(str) {
+   return new Buffer(str).toString('base64');
+}
+
+function b64decode(encodedStr) {
+    return new Buffer(encodedStr, 'base64').toString();
+}
 
 // ユーザ更新
 app.get('/updateUser', function(req, res, next){
