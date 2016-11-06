@@ -42,6 +42,7 @@ mongoose.model('pitch', new mongoose.Schema({
   location:     [Number],
   place:        String,
   placeid:      String,
+  placeimg:	String,
   arrive:       Number,
   time:		String,
   starttime:    Number
@@ -95,6 +96,7 @@ app.get('/updateUserLocation', function(req, res, next){
 });
 
 // 最も近い教師をリクエスト
+/*
 app.get('/requestTeacher', function(req, res, next){
   //User.findOne({ location : { $near : [req.param("lng"), req.param("lat")] }, native:req.param("lang") }, function(err, doc){
     //if(!doc){
@@ -110,7 +112,35 @@ app.get('/requestTeacher', function(req, res, next){
       pitchRecord.location = [req.param("lng"), req.param("lat")];
       pitchRecord.place    = req.param("place");
       pitchRecord.placeid  = req.param("placeid");
+      pitchRecord.placeimg = req.param("img");
       //pitchRecord.time     = req.param("time");
+      pitchRecord.time     = new Date().toISOString();
+      pitchRecord.save(function(err){
+        res.send(pitchRecord);
+      });
+    //}
+  //});
+});
+*/
+
+// 最も近い教師をリクエスト
+app.post('/requestTeacher', function(req, res, next){
+  //User.findOne({ location : { $near : [req.body.lng, req.body.lat] }, native:req.body.lang }, function(err, doc){
+    //if(!doc){
+      //res.send("null");
+    //} else {
+      //var teacher = doc.toObject();
+      // pitchレコード（ステータス：リクエスト中）を作成
+      var pitchRecord = new Pitch();
+      pitchRecord.status   = "req";
+      pitchRecord.student  = req.body.userid;
+      pitchRecord.teacher  = "";
+      pitchRecord.language = req.body.lang;
+      pitchRecord.location = [req.body.lng, req.body.lat];
+      pitchRecord.place    = req.body.place;
+      pitchRecord.placeid  = req.body.placeid;
+      pitchRecord.placeimg = req.body.img;
+      //pitchRecord.time     = req.body.time;
       pitchRecord.time     = new Date().toISOString();
       pitchRecord.save(function(err){
         res.send(pitchRecord);
