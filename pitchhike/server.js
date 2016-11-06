@@ -43,7 +43,7 @@ mongoose.model('pitch', new mongoose.Schema({
   place:        String,
   placeid:      String,
   arrive:       Number,
-  time:		Number,
+  time:		String,
   starttime:    Number
 }));
 Pitch = mongoose.model('pitch');
@@ -110,7 +110,8 @@ app.get('/requestTeacher', function(req, res, next){
       pitchRecord.location = [req.param("lng"), req.param("lat")];
       pitchRecord.place    = req.param("place");
       pitchRecord.placeid  = req.param("placeid");
-      pitchRecord.time     = req.param("time");
+      //pitchRecord.time     = req.param("time");
+      pitchRecord.time     = new Date().toISOString();
       pitchRecord.save(function(err){
         res.send(pitchRecord);
       });
@@ -121,7 +122,9 @@ app.get('/requestTeacher', function(req, res, next){
 // 自分の近くで自分の母国語に対するリクエストが無いか確認
 app.get('/searchRequest', function(req, res, next){
   //Pitch.find({ language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
-  Pitch.find({ location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req", student:{$ne:req.param("userid")} },{},{sort:{_id:-1}}, function(err, doc){
+  var dt = new Date();
+  dt.setMinutes(dt.getMinutes() - 3);
+  Pitch.find({ time: {'$gte': dt.toISOString()}, location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req", student:{$ne:req.param("userid")} },{},{sort:{_id:-1}}, function(err, doc){
     if(!doc){
       res.send("null");
     } else {
