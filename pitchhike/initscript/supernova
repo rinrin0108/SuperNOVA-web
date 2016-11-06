@@ -2,12 +2,12 @@
 # chkconfig: 345 88 08
 # description: Forever for Node.js
 
-DEAMON=/opt/royalcustomers/server.js
-LOG=/var/log/royalcustomers.log
+DEAMON=/opt/pitchhike/server.js
+LOG=/var/log/supernova.log
 PID=/root/.forever/pids/forever.pid
 
-export PATH=$PATH:/root/.node/v0.10.13/bin
-export NODE_PATH=$NODE_PATH:/opt/royalcustomers/node_modules
+export PATH=$PATH:/root/.node/v0.10.46/bin
+export NODE_PATH=$NODE_PATH:/opt/pitchhike/node_modules
 
 node=node
 forever=forever

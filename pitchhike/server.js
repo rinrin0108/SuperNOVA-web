@@ -121,7 +121,7 @@ app.get('/requestTeacher', function(req, res, next){
 // 自分の近くで自分の母国語に対するリクエストが無いか確認
 app.get('/searchRequest', function(req, res, next){
   //Pitch.find({ language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
-  Pitch.find({ location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
+  Pitch.find({ location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req", student:{$ne:req.param("userid")} },{},{sort:{_id:-1}}, function(err, doc){
     if(!doc){
       res.send("null");
     } else {
