@@ -44,7 +44,8 @@ mongoose.model('pitch', new mongoose.Schema({
   placeid:      String,
   placeimg:	String,
   arrive:       Number,
-  time:		String,
+  date:		String,
+  time:		Number,
   starttime:    Number
 }));
 Pitch = mongoose.model('pitch');
@@ -113,8 +114,8 @@ app.get('/requestTeacher', function(req, res, next){
       pitchRecord.place    = req.param("place");
       pitchRecord.placeid  = req.param("placeid");
       pitchRecord.placeimg = req.param("img");
-      //pitchRecord.time     = req.param("time");
-      pitchRecord.time     = new Date().toISOString();
+      pitchRecord.time     = req.param("time");
+      pitchRecord.date     = new Date().toISOString();
       pitchRecord.save(function(err){
         res.send(pitchRecord);
       });
@@ -140,8 +141,8 @@ app.post('/requestTeacher', function(req, res, next){
       pitchRecord.place    = req.body.place;
       pitchRecord.placeid  = req.body.placeid;
       pitchRecord.placeimg = req.body.img;
-      //pitchRecord.time     = req.body.time;
-      pitchRecord.time     = new Date().toISOString();
+      pitchRecord.time     = req.body.time;
+      pitchRecord.date     = new Date().toISOString();
       pitchRecord.save(function(err){
         res.send(pitchRecord);
       });
@@ -154,7 +155,7 @@ app.get('/searchRequest', function(req, res, next){
   //Pitch.find({ language:req.param("lang"), status:"req" },{},{sort:{_id:-1}}, function(err, doc){
   var dt = new Date();
   dt.setMinutes(dt.getMinutes() - 3);
-  Pitch.find({ time: {'$gte': dt.toISOString()}, location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req", student:{$ne:req.param("userid")} },{},{sort:{_id:-1}}, function(err, doc){
+  Pitch.find({ date: {'$gte': dt.toISOString()}, location : { $near : [req.param("lng"), req.param("lat")] }, language:req.param("lang"), status:"req", student:{$ne:req.param("userid")} },{},{sort:{_id:-1}}, function(err, doc){
     if(!doc){
       res.send("null");
     } else {
