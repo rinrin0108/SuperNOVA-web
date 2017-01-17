@@ -4,12 +4,18 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
 const app = express()
+const http = require('http');
+const async = require('async');
 
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(awsServerlessExpressMiddleware.eventContext())
 
+
+/**
+*  Sample API
+*/
 app.get('/', (req, res) => {
     res.sendFile(`${__dirname}/index.html`)
 })
@@ -65,6 +71,71 @@ const users = [{
     name: 'Jane'
 }]
 let userIdCounter = users.length
+/**
+*  Sample API
+*/
+
+// ユーザ一覧取得
+app.get('/getUsers', function(req, res, next){
+  console.log('--- a');
+  var url = 'http://54.64.118.109/getUsers'
+  var response = ''
+
+  async.waterfall([
+    function(callback) {
+      http.get(url, function(res){
+        console.log('--- b');
+          var body = '';
+          res.setEncoding('utf8');
+
+          res.on('data', function(chunk){
+            console.log('--- c');
+              body += chunk;
+          });
+
+          res.on('end', function(res){
+            console.log('--- d');
+              console.log(body);
+              req.write(body);
+              req.end();
+          });
+      }).on('error', function(e){
+        console.log('--- e');
+          console.log(e.message); //エラー時
+      });
+
+      console.log('1');
+      setTimeout(function() {
+        console.log('1 done');
+        callback(null, 1);
+      }, 1000);
+    },
+    function(arg1, callback) { // arg1 === 1
+      console.log('2');
+      setTimeout(function() {
+        console.log('2 done');
+        callback(null, 1, 2);
+      }, 50);
+    },
+    function(arg1, arg2, callback) { // arg1 === 1, arg2 === 2
+      console.log('3');
+      setTimeout(function() {
+        console.log('3 done');
+        callback(null, 1, 2, 3);
+      }, 10);
+    }
+  ], function(err, arg1, arg2, arg3) { // arg1 === 1, arg2 === 2, arg3 === 3
+    if (err) {
+      throw err;
+    }
+    console.log('all done.');
+    console.log(arg1, arg2, arg3);
+  });
+
+
+});
+
+
 
 // The aws-serverless-express library creates a server and listens on a Unix
 // Domain Socket for you, so you can remove the usual call to app.listen.
