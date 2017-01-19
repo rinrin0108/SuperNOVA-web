@@ -4,8 +4,7 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
 const app = express()
-const http = require('http');
-const async = require('async');
+const request = require('sync-request')
 
 app.use(cors())
 app.use(bodyParser.json())
@@ -77,65 +76,24 @@ let userIdCounter = users.length
 
 // ユーザ一覧取得
 app.get('/getUsers', function(req, res, next){
-  console.log('--- a');
   var url = 'http://54.64.118.109/getUsers'
-  var response = ''
-
-  async.waterfall([
-    function(callback) {
-      http.get(url, function(res){
-        console.log('--- b');
-          var body = '';
-          res.setEncoding('utf8');
-
-          res.on('data', function(chunk){
-            console.log('--- c');
-              body += chunk;
-          });
-
-          res.on('end', function(res){
-            console.log('--- d');
-              console.log(body);
-              req.write(body);
-              req.end();
-          });
-      }).on('error', function(e){
-        console.log('--- e');
-          console.log(e.message); //エラー時
-      });
-
-      console.log('1');
-      setTimeout(function() {
-        console.log('1 done');
-        callback(null, 1);
-      }, 1000);
-    },
-    function(arg1, callback) { // arg1 === 1
-      console.log('2');
-      setTimeout(function() {
-        console.log('2 done');
-        callback(null, 1, 2);
-      }, 50);
-    },
-    function(arg1, arg2, callback) { // arg1 === 1, arg2 === 2
-      console.log('3');
-      setTimeout(function() {
-        console.log('3 done');
-        callback(null, 1, 2, 3);
-      }, 10);
-    }
-  ], function(err, arg1, arg2, arg3) { // arg1 === 1, arg2 === 2, arg3 === 3
-    if (err) {
-      throw err;
-    }
-    console.log('all done.');
-    console.log(arg1, arg2, arg3);
-  });
-
-
+  var result = request('GET', url).getBody('utf8')
+  res.json(JSON.parse(result||"{}"))
 });
 
+// ピッチ一覧取得
+app.get('/getPitchs', function(req, res, next){
+  var url = 'http://54.64.118.109/getPitchs'
+  var result = request('GET', url).getBody('utf8')
+  res.json(JSON.parse(result||"{}"))
+});
 
+// ユーザの位置情報を更新
+app.get('/updateUserLocation', function(req, res, next){
+  var url = 'http://54.64.118.109/updateUserLocation?lat='+req.param('lat')+'&lng='+req.param('lng')+'&userid='+req.param('userid')
+  var result = request('GET', url).getBody('utf8')
+  res.json(JSON.parse(result||"{}"))
+});
 
 // The aws-serverless-express library creates a server and listens on a Unix
 // Domain Socket for you, so you can remove the usual call to app.listen.
